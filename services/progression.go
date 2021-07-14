@@ -19,6 +19,6 @@ func GetProgressionService() *progressionService {
 }
 
 func (ps *progressionService) FindAll(ctx context.Context, lastId string) ([]model.ProgressionModel, error) {
-	documents, err := repo.GetProgressionRepo().Find(ctx, lastId)
+	documents, err := repo.GetProgressionRepo().FindAll(ctx, lastId)
 	return documents, err
 }

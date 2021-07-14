@@ -2,34 +2,41 @@ package main
 
 import (
 	"context"
-	"encoding/json"
-	"fmt"
 	"log"
 	"net/http"
 
 	controller "github.com/jasonzguo/vaccination-progress-service/controllers"
+	middleware "github.com/jasonzguo/vaccination-progress-service/middlewares"
 	repo "github.com/jasonzguo/vaccination-progress-service/repos"
 	"github.com/julienschmidt/httprouter"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.uber.org/zap"
 )
 
-func initializeMongoClient() *mongo.Client {
+func initializeMongoClient() (*mongo.Client, context.Context) {
 	clientOptions := options.Client().ApplyURI("mongodb://localhost:27017")
 
-	client, err := mongo.Connect(context.TODO(), clientOptions)
+	ctx := context.TODO()
+	client, err := mongo.Connect(ctx, clientOptions)
 
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	err = client.Ping(context.TODO(), nil)
+	err = client.Ping(ctx, nil)
 
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	return client
+	return client, ctx
+}
+
+func initializeLogger() (*zap.Logger, func()) {
+	logger := zap.NewExample()
+	undo := zap.ReplaceGlobals(logger)
+	return logger, undo
 }
 
 func initializeRepo(client *mongo.Client) {
@@ -38,29 +45,17 @@ func initializeRepo(client *mongo.Client) {
 	repo.GetProgressionRepo().SetCollection(progressionCollection)
 }
 
-func Index(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	queries := r.URL.Query()
-
-	documents, err := controller.GetProgressionController().GetAll(r.Context(), queries.Get("lastId"))
-
-	if err != nil {
-		log.Fatal(fmt.Errorf("[Index] error in calling ProgressionController.GetAll  %v", err))
-	}
-
-	documentsJson, err := json.Marshal(documents)
-	if err != nil {
-		log.Fatal(fmt.Errorf("[Index] error in calling json.Marshal  %v", err))
-	}
-
-	fmt.Fprint(w, string(documentsJson))
-}
-
 func main() {
-	client := initializeMongoClient()
+	logger, undo := initializeLogger()
+	defer logger.Sync()
+	defer undo()
+
+	client, ctx := initializeMongoClient()
+	defer client.Disconnect(ctx)
+
 	initializeRepo(client)
 
 	router := httprouter.New()
-	router.GET("/", Index)
-
+	router.GET("/", middleware.LogRequest(controller.GetProgressionController().FindAll))
 	log.Fatal(http.ListenAndServe(":8080", router))
 }
