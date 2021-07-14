@@ -1,1 +1,1 @@
-# vaccination--progress-service
+# vaccination-progress-service
