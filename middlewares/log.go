@@ -4,7 +4,6 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/julienschmidt/httprouter"
 	"go.uber.org/zap"
 )
@@ -29,32 +28,13 @@ func (w *statusWriter) Write(b []byte) (int, error) {
 	return n, err
 }
 
-const (
-	requestIDHeaderKey = "X-Request-ID"
-)
-
-func LogRequest(next httprouter.Handle) httprouter.Handle {
+func Log(next httprouter.Handle) httprouter.Handle {
 	fn := func(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 		// Start Time
 		startTime := time.Now()
 
-		// Status Write
+		// Status Writer
 		sw := statusWriter{ResponseWriter: w}
-
-		// Get Request ID
-		requestID := r.Header.Get(requestIDHeaderKey)
-		if requestID == "" {
-			requestID = uuid.New().String()
-		}
-
-		// Log Request Start
-		zap.L().Info("Request Start",
-			zap.String("ID", requestID),
-			zap.String("Method", r.Method),
-			zap.String("Path", r.URL.Path),
-			zap.String("Query", r.URL.RawQuery),
-			zap.Time("Timestamp", startTime),
-		)
 
 		// Next
 		if next != nil {
@@ -68,8 +48,7 @@ func LogRequest(next httprouter.Handle) httprouter.Handle {
 		duration := endTime.Sub(startTime).String()
 
 		// Log Request End
-		zap.L().Info("Request End",
-			zap.String("ID", requestID),
+		zap.L().Info("Request",
 			zap.String("Method", r.Method),
 			zap.String("Path", r.URL.Path),
 			zap.String("Query", r.URL.RawQuery),

@@ -18,7 +18,7 @@ func GetProgressionService() *progressionService {
 	return progressionServiceInstance
 }
 
-func (ps *progressionService) FindAll(ctx context.Context, lastId string) ([]model.ProgressionModel, error) {
-	documents, err := repo.GetProgressionRepo().FindAll(ctx, lastId)
-	return documents, err
+func (ps *progressionService) FindAll(ctx context.Context, lastId string) (*model.PaginatedProgressionModel, error) {
+	payload, err := repo.GetProgressionRepo().FindAll(ctx, lastId)
+	return payload, err
 }

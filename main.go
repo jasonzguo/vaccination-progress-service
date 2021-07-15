@@ -55,7 +55,11 @@ func main() {
 
 	initializeRepo(client)
 
+	ms := middleware.NewStack()
+	ms.Use(middleware.Log)
+	ms.Use(middleware.Authenticate)
+
 	router := httprouter.New()
-	router.GET("/", middleware.LogRequest(controller.GetProgressionController().FindAll))
+	router.GET("/", ms.Wrap(controller.GetProgressionController().FindAll))
 	log.Fatal(http.ListenAndServe(":8080", router))
 }

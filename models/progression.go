@@ -7,11 +7,11 @@ type ProgressionModel struct {
 }
 
 type MetaData struct {
-	Count  int64  `bson:"count,omitempty"`
-	LastId string `bson:"lastId,omitempty"`
+	Count  int64  `bson:"count,omitempty" json:"count"`
+	LastId string `bson:"lastId,omitempty" json:"lastId"`
 }
 
 type PaginatedProgressionModel struct {
-	Data []ProgressionModel `bson:"data,omitempty"`
-	Meta MetaData           `bson:"meta,omitempty"`
+	Data []ProgressionModel `bson:"data,omitempty" json:"data"`
+	Meta MetaData           `bson:"meta,omitempty" json:"meta"`
 }

@@ -17,4 +17,5 @@
 *-dev.yaml
 
 # Editor configs
-.vscode
+.vscode/*
+!.vscode/launch.json

@@ -6,6 +6,7 @@ import (
 
 	model "github.com/jasonzguo/vaccination-progress-service/models"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
@@ -26,13 +27,23 @@ func (pr *progressionRepo) SetCollection(c *mongo.Collection) {
 	pr.collection = c
 }
 
-func (pr *progressionRepo) FindAll(ctx context.Context, lastId string) ([]model.ProgressionModel, error) {
+func (pr *progressionRepo) FindAll(ctx context.Context, lastId string) (*model.PaginatedProgressionModel, error) {
 	var progressions model.PaginatedProgressionModel
+
+	match := bson.M{}
+	if lastId != "" {
+		lastObjectId, err := primitive.ObjectIDFromHex(lastId)
+		if err != nil {
+			return nil, fmt.Errorf("[GetProgressionRepo.Find] error in calling primitive.ObjectIDFromHex %v", err)
+		}
+
+		match["_id"] = bson.M{"$gt": lastObjectId}
+	}
 
 	facetStage := bson.M{
 		"$facet": bson.M{
 			"data": []bson.M{
-				{"$match": bson.M{}},
+				{"$match": match},
 				{"$limit": 10},
 			},
 			"count": []bson.M{{"$count": "count"}},
@@ -67,5 +78,5 @@ func (pr *progressionRepo) FindAll(ctx context.Context, lastId string) ([]model.
 		}
 	}
 
-	return progressions.Data, nil
+	return &progressions, nil
 }
